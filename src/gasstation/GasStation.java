@@ -3,23 +3,51 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-
 package gasstation;
+
+import com.sun.javacard.apduio.*;
+import static com.sun.javacard.apduio.Apdu.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.Socket;
+import java.nio.ByteBuffer;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
  * @author Ariya
  */
 public class GasStation extends javax.swing.JFrame {
+
+    // copy form card application
+    final static byte SSGS_CLA = (byte) 0x80;
+    final static byte VERIFY = (byte) 0x01;
+    final static byte GET_BALANCE = (byte) 0x02;
+    final static byte UPDATE_PURCHASE_INFO = (byte) 0x03;
+    final static byte GET_PURCHASE_HISTORIES = (byte) 0x04;
+    final static byte GET_PURCHASE_HISTORIES_BY_TIME = (byte) 0x05;
+    final static byte GET_PURCHASE_HISTORIES_BY_STATION = (byte) 0x06;
+    final static byte MAX_PIN_SIZE = (byte) 0x08;
+    final static short SW_VERIFICATION_FAILED = 0x6300;
+    final static short SW_PIN_VERIFICATION_REQUIRED = 0x6301;
+    final static short SW_NOT_ENOUGH_ACCOUNT_BALANCE = 0x6302;
+    final static short INVALID_UPDATE_PURCHASE_INFO = 0x6303;
+    final static short INVALID_STATION_SIGNATURE = 0x6304;
+    final static short TLV_EXCEPTION = 0x6305;
+    final static short ARITHMETIC_EXCEPTION = 0x6306;
+    final static short INVAILD_NUMBER_FORMAT = 0x6307;
+    final static short SW_PURCHASE_INFO_NOT_FOUND = 0x6308;
+    final static short SW_PIN_IS_BLOCKED = 0x6309;
+
     // define constant
     final static int GASOLINE_PRICE = (int) 23500;
     final static String STATION_ID = "AA123";
-    
-    // declare variable
-    int maxAmount;
-    int amountOfGasoline;
-    int screen;
-    
+
+    // max data length
+    final static int MAX_DATA_LENGTH = (int) 1024;
+
     // define the code of screen
     final static int SCR_INITIAL = (int) 10;
     final static int SCR_VALIDATE = (int) 20;
@@ -28,15 +56,41 @@ public class GasStation extends javax.swing.JFrame {
     final static int SCR_MAIN = (int) 30;
     final static int SCR_REFUEL = (int) 40;
     final static int SCR_REFUEL_COMPLETE = (int) 41;
-    
+
     final static int SCR_GET_BALANCE = (int) 50;
     final static int SCR_GET_HISTORIES = (int) 60;
     final static int SCR_GET_HISTORIES_BY_TIME = (int) 70;
     final static int SCR_GET_HISTORIES_BY_STATION = (int) 80;
     final static int SCR_GET_HISTORIES_RESULT = (int) 61;
-    
+
     final static int SCR_CHANGE_PIN = (int) 90;
+
+    // for connect the card
+    CadClientInterface cad;
+    Socket sock;
+    InputStream is;
+    OutputStream os;
+
+    // array for input data
+    String inputString;
+    char inputArr[];
+    int Lc;
+
+    // array for input data, output apdu command
+    byte dataIn[];
+    byte dataOut[];
     
+    // array for output data in textarea
+    String outputString;
+
+    // declare variable
+    int maxAmount;
+    int amountOfGasoline;
+    int screen;
+
+    // variable for 
+    long balance;
+
     // function set label for select button
     private void setLabel(String str1, String str2, String str3, String str4, String str5) {
         lblForBtn1.setText(str1);
@@ -45,10 +99,10 @@ public class GasStation extends javax.swing.JFrame {
         lblForBtn4.setText(str4);
         lblForBtn5.setText(str5);
     }
-    
+
     private void setScreen(int screenID) {
         screen = screenID;
-        switch(screenID) {
+        switch (screenID) {
             case SCR_VALIDATE:
                 announce.setText("Please enter your PIN:");
                 setLabel(null, null, null, null, null);
@@ -74,12 +128,12 @@ public class GasStation extends javax.swing.JFrame {
                 setLabel("EXPORT BILL", "BACK", null, null, null);
                 break;
             case SCR_GET_BALANCE:
-                announce.setText("Your account balance is xxx");
+                announce.setText("Your account balance is:" + balance);
                 setLabel("BACK", null, null, null, null);
                 break;
             case SCR_GET_HISTORIES:
                 announce.setText("Please select your choice");
-                setLabel("BY TIME", "BY STATION", null, null, null);
+                setLabel("BY TIME", "BY STATION", "ALL", "RECENT", null);
                 break;
             case SCR_GET_HISTORIES_BY_TIME:
                 announce.setText("Please enter the time:");
@@ -90,7 +144,7 @@ public class GasStation extends javax.swing.JFrame {
                 setLabel(null, null, null, null, null);
                 break;
             case SCR_GET_HISTORIES_RESULT:
-                announce.setText("Ket qua tim kiem la xxx");
+                announce.setText(outputString);
                 setLabel("EXPORT BILL", "BACK", null, null, null);
                 break;
             case SCR_CHANGE_PIN:
@@ -105,13 +159,59 @@ public class GasStation extends javax.swing.JFrame {
         }
     }
     
+    /**
+     * convenient function
+     */
+    private String createDateTime(String time) {
+        char timeArr[] = time.toCharArray();
+        return "20"+timeArr[0]+timeArr[1]+"/"+timeArr[2]+timeArr[3]+"/"+timeArr[4]+timeArr[5]+" "+timeArr[6]+timeArr[7]+":"+timeArr[8]+timeArr[9];
+    }
     
+    /**
+     * get string form bytes array
+     */
+    private String getStringFromByteArray(byte[] bArray, int bOffset, int bLength) {
+        char result[] = new char[bLength];
+        for (int i = 0; i < bLength; i++) {
+            result[i] = (char) bArray[bOffset + i];
+        }
+        return new String(result);
+    }
+    
+    /**
+     * create output for get histories function
+     */
+    private String getOutputHistories(byte[] bArray) {
+        String result = "";
+        String history;
+        ByteBuffer bb = ByteBuffer.wrap(bArray);
+        int offset;
+        int len = bArray.length;
+        if (len <= 134) {
+            offset = 2;
+        } else {
+            offset = 4;
+        }
+        while (offset < len) {
+            history = "Station ID: " + getStringFromByteArray(bArray, offset + 4, 5) + "\r\n";
+            history += "Time: " + createDateTime(getStringFromByteArray(bArray, offset + 11, 10)) + "\r\n";
+            history += "Amount: " + bb.getInt(offset + 23) + "\r\n";
+            history += "Price: " + bb.getInt(offset + 29) + "\r\n";
+            result += "\r\n" + history;
+            offset += 33;
+        }
+        return result;
+    }
 
     /**
      * Creates new form GasStation
      */
-    public GasStation() {
+    public GasStation() throws IOException, CadTransportException {
         initComponents();
+
+        // initialize the dataIn, dataOut
+        dataIn = new byte[MAX_DATA_LENGTH];
+
         // test
         setScreen(SCR_VALIDATE);
         price.setText(Integer.toString(GASOLINE_PRICE));
@@ -120,6 +220,22 @@ public class GasStation extends javax.swing.JFrame {
         stationID.setEditable(false);
         announce.setEditable(false);
         // insert code to connect the card, init maxAmount, screen (sau nay them code chon card, copy sang cho khac
+
+        // code for connect the card
+        sock = new Socket("localhost", 9025);
+        is = sock.getInputStream();
+        os = sock.getOutputStream();
+        cad = CadDevice.getCadClientInstance(CadDevice.PROTOCOL_T1, is, os);
+        cad.powerUp();
+        Apdu apdu = new Apdu();
+        apdu.command[CLA] = (byte) 0x00;
+        apdu.command[INS] = (byte) 0xa4;
+        apdu.command[P1] = (byte) 0x04;
+        apdu.command[P2] = (byte) 0x00;
+        byte[] dataIn = {(byte) 0x92, (byte) 0x25, (byte) 0xb1, (byte) 0xd8, (byte) 0xaa, (byte) 0x74};
+        apdu.setDataIn(dataIn, 6);
+        cad.exchangeApdu(apdu);
+        System.out.println(apdu);
     }
 
     /**
@@ -369,7 +485,7 @@ public class GasStation extends javax.swing.JFrame {
 
     private void btnSelection1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSelection1ActionPerformed
         // TODO add your handling code here:
-        switch(screen) {
+        switch (screen) {
             case SCR_VALIDATE_FAILED:
                 setScreen(SCR_VALIDATE);
                 break;
@@ -393,16 +509,37 @@ public class GasStation extends javax.swing.JFrame {
 
     private void btnSubmitActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSubmitActionPerformed
         // TODO add your handling code here:
-        switch(screen) {
+        switch (screen) {
             case SCR_VALIDATE:
                 // 01 code xac thuc pin o day, co 3 truong hop: thanh cong, that bai, PIN bi block
-                if(inputText.getText().equals("0")) {
+                Apdu apdu = new Apdu();
+                apdu.command[CLA] = SSGS_CLA;
+                apdu.command[INS] = VERIFY;
+                inputString = inputText.getText();
+                inputArr = inputString.toCharArray();
+                Lc = inputArr.length;
+                for (int i = 0; i < Lc; i++) {
+                    dataIn[i] = (byte) (inputArr[i] - '0');
+                }
+                if (Lc == 0) {
+                    Lc = 1; //need edit, tranh loi 6f00
+                }
+                apdu.setDataIn(dataIn, Lc);
+                try {
+                    cad.exchangeApdu(apdu);
+                } catch (IOException ex) {
+                    Logger.getLogger(GasStation.class.getName()).log(Level.SEVERE, null, ex);
+                } catch (CadTransportException ex) {
+                    Logger.getLogger(GasStation.class.getName()).log(Level.SEVERE, null, ex);
+                }
+                System.out.println(apdu);
+                if (apdu.getStatus() == 0x9000) {
                     setScreen(SCR_MAIN);
                 }
-                if(inputText.getText().equals("1")) {
+                if (apdu.getStatus() == (int) SW_VERIFICATION_FAILED) {
                     setScreen(SCR_VALIDATE_FAILED);
                 }
-                if (inputText.getText().equals("2")) {
+                if (apdu.getStatus() == (int) SW_PIN_IS_BLOCKED) {
                     setScreen(SCR_PIN_IS_BLOCKED);
                 }
                 break;
@@ -412,7 +549,7 @@ public class GasStation extends javax.swing.JFrame {
                 }
                 break;
             case SCR_GET_HISTORIES_BY_STATION:
-                if (inputText.getText().equals("1")){
+                if (inputText.getText().equals("1")) {
                     setScreen(SCR_GET_HISTORIES_RESULT);
                 }
         }
@@ -420,8 +557,26 @@ public class GasStation extends javax.swing.JFrame {
 
     private void btnSelection2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSelection2ActionPerformed
         // TODO add your handling code here:
-        switch(screen) {
+        switch (screen) {
             case SCR_MAIN:
+                // get balance fuction
+                
+                // send get balance apdu
+                Apdu apdu = new Apdu();
+                apdu.command[CLA] = SSGS_CLA;
+                apdu.command[INS] = GET_BALANCE;
+                apdu.command[P1] = (byte) 0x02; //format hex
+                apdu.setLc(0);
+                try {
+                    cad.exchangeApdu(apdu);
+                } catch (IOException ex) {
+                    Logger.getLogger(GasStation.class.getName()).log(Level.SEVERE, null, ex);
+                } catch (CadTransportException ex) {
+                    Logger.getLogger(GasStation.class.getName()).log(Level.SEVERE, null, ex);
+                }
+                System.out.println(apdu);
+                byte balanceArr[] = apdu.getDataOut();
+                balance = ByteBuffer.wrap(balanceArr, 0, 8).getLong();
                 setScreen(SCR_GET_BALANCE);
                 break;
             case SCR_REFUEL_COMPLETE:
@@ -441,6 +596,23 @@ public class GasStation extends javax.swing.JFrame {
         switch (screen) {
             case SCR_MAIN:
                 setScreen(SCR_GET_HISTORIES);
+                break;
+            case SCR_GET_HISTORIES:
+                Apdu apdu = new Apdu();
+                apdu.command[CLA] = SSGS_CLA;
+                apdu.command[INS] = GET_PURCHASE_HISTORIES;
+                apdu.setLc(0);
+                try {
+                    cad.exchangeApdu(apdu);
+                } catch (IOException ex) {
+                    Logger.getLogger(GasStation.class.getName()).log(Level.SEVERE, null, ex);
+                } catch (CadTransportException ex) {
+                    Logger.getLogger(GasStation.class.getName()).log(Level.SEVERE, null, ex);
+                }
+                System.out.println(apdu);
+                System.out.println(apdu.dataOut.length);
+                outputString = getOutputHistories(apdu.dataOut);
+                setScreen(SCR_GET_HISTORIES_RESULT);
                 break;
         }
     }//GEN-LAST:event_btnSelection3ActionPerformed
@@ -493,7 +665,13 @@ public class GasStation extends javax.swing.JFrame {
         /* Create and display the form */
         java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
-                new GasStation().setVisible(true);
+                try {
+                    new GasStation().setVisible(true);
+                } catch (IOException ex) {
+                    Logger.getLogger(GasStation.class.getName()).log(Level.SEVERE, null, ex);
+                } catch (CadTransportException ex) {
+                    Logger.getLogger(GasStation.class.getName()).log(Level.SEVERE, null, ex);
+                }
             }
         });
     }
