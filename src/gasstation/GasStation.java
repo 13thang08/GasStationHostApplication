@@ -89,7 +89,7 @@ public class GasStation extends javax.swing.JFrame {
     int screen;
 
     // variable for 
-    long balance;
+    int balance;
 
     // function set label for select button
     private void setLabel(String str1, String str2, String str3, String str4, String str5) {
@@ -565,7 +565,6 @@ public class GasStation extends javax.swing.JFrame {
                 Apdu apdu = new Apdu();
                 apdu.command[CLA] = SSGS_CLA;
                 apdu.command[INS] = GET_BALANCE;
-                apdu.command[P1] = (byte) 0x02; //format hex
                 apdu.setLc(0);
                 try {
                     cad.exchangeApdu(apdu);
@@ -576,7 +575,7 @@ public class GasStation extends javax.swing.JFrame {
                 }
                 System.out.println(apdu);
                 byte balanceArr[] = apdu.getDataOut();
-                balance = ByteBuffer.wrap(balanceArr, 0, 8).getLong();
+                balance = ByteBuffer.wrap(balanceArr, 0, 4).getInt();
                 setScreen(SCR_GET_BALANCE);
                 break;
             case SCR_REFUEL_COMPLETE:
