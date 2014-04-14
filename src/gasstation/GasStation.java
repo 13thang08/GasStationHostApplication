@@ -64,6 +64,8 @@ public class GasStation extends javax.swing.JFrame {
     final static int SCR_GET_HISTORIES_RESULT = (int) 61;
 
     final static int SCR_CHANGE_PIN = (int) 90;
+    
+    final static int SCR_ERR = (int) 100;
 
     // for connect the card
     CadClientInterface cad;
@@ -82,11 +84,15 @@ public class GasStation extends javax.swing.JFrame {
     
     // array for output data in textarea
     String outputString;
+    
+    // string to announce err
+    String errString;
 
     // declare variable
     int maxAmount;
     int amountOfGasoline;
     int screen;
+    int backToScreen;
 
     // variable for 
     int balance;
@@ -155,8 +161,23 @@ public class GasStation extends javax.swing.JFrame {
                 announce.setText("Man hinh ban dau");
                 setLabel(null, null, null, null, null);
                 break;
+            case SCR_ERR:
+                announce.setText(errString);
+                setLabel("BACK", null, null, null, null);
             default:
         }
+    }
+    
+    /**
+     * convenient function
+     */
+    private byte[] createCharArr(String str) {
+        byte result[] = new byte[str.length()];
+        char charArr[] = str.toCharArray();
+        for(int i = 0; i < str.length(); i++) {
+            result[i] = (byte) charArr[i];
+        }
+        return result;
     }
     
     /**
@@ -504,15 +525,18 @@ public class GasStation extends javax.swing.JFrame {
             case SCR_GET_HISTORIES:
                 setScreen(SCR_GET_HISTORIES_BY_TIME);
                 break;
+            case SCR_ERR:
+                setScreen(backToScreen);
+                break;
         }
     }//GEN-LAST:event_btnSelection1ActionPerformed
 
     private void btnSubmitActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSubmitActionPerformed
         // TODO add your handling code here:
+        Apdu apdu = new Apdu();
         switch (screen) {
             case SCR_VALIDATE:
                 // 01 code xac thuc pin o day, co 3 truong hop: thanh cong, that bai, PIN bi block
-                Apdu apdu = new Apdu();
                 apdu.command[CLA] = SSGS_CLA;
                 apdu.command[INS] = VERIFY;
                 inputString = inputText.getText();
@@ -544,14 +568,65 @@ public class GasStation extends javax.swing.JFrame {
                 }
                 break;
             case SCR_GET_HISTORIES_BY_TIME:
-                if (inputText.getText().equals("1")) {
+                // if input is valid
+                if (inputText.getText().length() != 6) {
+                    errString = "Invalid format!";
+                    backToScreen = SCR_GET_HISTORIES_BY_TIME;
+                    setScreen(SCR_ERR);
+                    break;
+                }
+                apdu.command[CLA] = SSGS_CLA;
+                apdu.command[INS] = GET_PURCHASE_HISTORIES_BY_TIME;
+                dataIn = createCharArr(inputText.getText());
+                apdu.setDataIn(dataIn);
+                try {
+                    cad.exchangeApdu(apdu);
+                } catch (IOException ex) {
+                    Logger.getLogger(GasStation.class.getName()).log(Level.SEVERE, null, ex);
+                } catch (CadTransportException ex) {
+                    Logger.getLogger(GasStation.class.getName()).log(Level.SEVERE, null, ex);
+                }
+                System.out.println(apdu);
+                if (apdu.getStatus() == 0x9000) {
+                    outputString = getOutputHistories(apdu.dataOut);
                     setScreen(SCR_GET_HISTORIES_RESULT);
+                }
+                if (apdu.getStatus() == 0x6308) {
+                    errString = "No result!";
+                    backToScreen = SCR_MAIN;
+                    setScreen(SCR_ERR);
                 }
                 break;
             case SCR_GET_HISTORIES_BY_STATION:
-                if (inputText.getText().equals("1")) {
+                // if input is valid
+                if (inputText.getText().length() != 5) {
+                    errString = "Invalid format!";
+                    backToScreen = SCR_GET_HISTORIES_BY_STATION;
+                    setScreen(SCR_ERR);
+                    break;
+                }
+                apdu.command[CLA] = SSGS_CLA;
+                apdu.command[INS] = GET_PURCHASE_HISTORIES_BY_STATION;
+                dataIn = createCharArr(inputText.getText());
+                apdu.setDataIn(dataIn);
+                try {
+                    cad.exchangeApdu(apdu);
+                } catch (IOException ex) {
+                    Logger.getLogger(GasStation.class.getName()).log(Level.SEVERE, null, ex);
+                } catch (CadTransportException ex) {
+                    Logger.getLogger(GasStation.class.getName()).log(Level.SEVERE, null, ex);
+                }
+                System.out.println(apdu);
+                if (apdu.getStatus() == 0x9000) {
+                    outputString = getOutputHistories(apdu.dataOut);
                     setScreen(SCR_GET_HISTORIES_RESULT);
                 }
+                if (apdu.getStatus() == 0x6308) {
+                    errString = "No result!";
+                    backToScreen = SCR_MAIN;
+                    setScreen(SCR_ERR);
+                }
+                break;
         }
     }//GEN-LAST:event_btnSubmitActionPerformed
 
