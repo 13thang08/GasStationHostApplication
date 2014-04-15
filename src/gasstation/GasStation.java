@@ -570,11 +570,17 @@ public class GasStation extends javax.swing.JFrame {
                 inputString = inputText.getText();
                 inputArr = inputString.toCharArray();
                 Lc = inputArr.length;
+                
+                // check if input is empty
+                if (Lc == 0) {
+                    noticeString = "PIN cannot empty!";
+                    backToScreen = SCR_VALIDATE;
+                    setScreen(SCR_NAVIGATION);
+                    break;
+                }
+                
                 for (int i = 0; i < Lc; i++) {
                     dataIn[i] = (byte) (inputArr[i] - '0');
-                }
-                if (Lc == 0) {
-                    Lc = 1; //need edit, tranh loi 6f00
                 }
                 apdu.setDataIn(dataIn, Lc);
                 try {
