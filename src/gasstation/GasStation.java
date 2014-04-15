@@ -68,6 +68,7 @@ public class GasStation extends javax.swing.JFrame {
     final static int SCR_GET_HISTORIES_RESULT = (int) 61;
 
     final static int SCR_CHANGE_PIN = (int) 90;
+    final static int SCR_CONFIRM_PIN = (int) 91;
 
     final static int SCR_NAVIGATION = (int) 100;
 
@@ -103,6 +104,10 @@ public class GasStation extends javax.swing.JFrame {
 
     // variable for 
     int balance;
+
+    // variable for change PIN
+    String newPIN;
+    String confirmPIN;
 
     // function set label for select button
     private void setLabel(String str1, String str2, String str3, String str4, String str5) {
@@ -161,7 +166,11 @@ public class GasStation extends javax.swing.JFrame {
                 setLabel("EXPORT BILL", "BACK", null, null, null);
                 break;
             case SCR_CHANGE_PIN:
-                announce.setText("Day la man hinh change PIN");
+                announce.setText("Please enter the new PIN");
+                setLabel(null, null, null, null, null);
+                break;
+            case SCR_CONFIRM_PIN:
+                announce.setText("Confirm:");
                 setLabel(null, null, null, null, null);
                 break;
             case SCR_INITIAL:
@@ -178,7 +187,7 @@ public class GasStation extends javax.swing.JFrame {
     /**
      * convenient function
      */
-    private byte[] createCharArr(String str) {
+    private byte[] createByteArr(String str) {
         byte result[] = new byte[str.length()];
         char charArr[] = str.toCharArray();
         for (int i = 0; i < str.length(); i++) {
@@ -596,7 +605,7 @@ public class GasStation extends javax.swing.JFrame {
                 }
                 apdu.command[CLA] = SSGS_CLA;
                 apdu.command[INS] = GET_PURCHASE_HISTORIES_BY_TIME;
-                dataIn = createCharArr(inputText.getText());
+                dataIn = createByteArr(inputText.getText());
                 apdu.setDataIn(dataIn);
                 try {
                     cad.exchangeApdu(apdu);
@@ -626,7 +635,7 @@ public class GasStation extends javax.swing.JFrame {
                 }
                 apdu.command[CLA] = SSGS_CLA;
                 apdu.command[INS] = GET_PURCHASE_HISTORIES_BY_STATION;
-                dataIn = createCharArr(inputText.getText());
+                dataIn = createByteArr(inputText.getText());
                 apdu.setDataIn(dataIn);
                 try {
                     cad.exchangeApdu(apdu);
@@ -645,6 +654,58 @@ public class GasStation extends javax.swing.JFrame {
                     backToScreen = SCR_MAIN;
                     setScreen(SCR_NAVIGATION);
                 }
+                break;
+            case SCR_CHANGE_PIN:
+                newPIN = inputText.getText();
+                setScreen(SCR_CONFIRM_PIN);
+                break;
+            case SCR_CONFIRM_PIN:
+                confirmPIN = inputText.getText();
+                if (!(newPIN.equals(confirmPIN))) {
+                    noticeString = "PIN does not match with the confirm";
+                    backToScreen = SCR_CHANGE_PIN;
+                    setScreen(SCR_NAVIGATION);
+                } else if (newPIN.length() > 8) {
+                    noticeString = "New PIN length is too long";
+                    backToScreen = SCR_CHANGE_PIN;
+                    setScreen(SCR_NAVIGATION);
+                } else if (newPIN.length() == 0) {
+                    noticeString = "PIN cannot empty";
+                    backToScreen = SCR_CHANGE_PIN;
+                    setScreen(SCR_NAVIGATION);
+                } else {
+                    apdu.command[CLA] = SSGS_CLA;
+                    apdu.command[INS] = CHANGE_PIN;
+
+                    inputArr = newPIN.toCharArray();
+                    Lc = inputArr.length;
+                    for (int i = 0; i < Lc; i++) {
+                        dataIn[i] = (byte) (inputArr[i] - '0');
+                    }
+
+                    apdu.setDataIn(dataIn, Lc);
+
+                    try {
+                        cad.exchangeApdu(apdu);
+                    } catch (IOException ex) {
+                        Logger.getLogger(GasStation.class.getName()).log(Level.SEVERE, null, ex);
+                    } catch (CadTransportException ex) {
+                        Logger.getLogger(GasStation.class.getName()).log(Level.SEVERE, null, ex);
+                    }
+                    System.out.println(apdu);
+                    if (apdu.getStatus() == 0x9000) {
+                        noticeString = "PIN change successful";
+                        backToScreen = SCR_MAIN;
+                        setScreen(SCR_NAVIGATION);
+                    }
+
+                    if (apdu.getStatus() == SW_PIN_VERIFICATION_REQUIRED) {
+                        noticeString = "Need validate PIN first";
+                        backToScreen = SCR_VALIDATE;
+                        setScreen(SCR_NAVIGATION);
+                    }
+                }
+
                 break;
         }
     }//GEN-LAST:event_btnSubmitActionPerformed
