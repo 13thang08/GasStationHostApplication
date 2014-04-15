@@ -1,0 +1,5 @@
+
+Station ID: AA001
+Time: 2014/03/24 17:18
+Amount: 16
+Price: 2

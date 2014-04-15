@@ -7,6 +7,8 @@ package gasstation;
 
 import com.sun.javacard.apduio.*;
 import static com.sun.javacard.apduio.Apdu.*;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -29,6 +31,8 @@ public class GasStation extends javax.swing.JFrame {
     final static byte GET_PURCHASE_HISTORIES = (byte) 0x04;
     final static byte GET_PURCHASE_HISTORIES_BY_TIME = (byte) 0x05;
     final static byte GET_PURCHASE_HISTORIES_BY_STATION = (byte) 0x06;
+    final static byte GET_LAST_PURCHASE_HISTORY = (byte) 0x07;
+    final static byte CHANGE_PIN = (byte) 0x08;
     final static byte MAX_PIN_SIZE = (byte) 0x08;
     final static short SW_VERIFICATION_FAILED = 0x6300;
     final static short SW_PIN_VERIFICATION_REQUIRED = 0x6301;
@@ -64,8 +68,8 @@ public class GasStation extends javax.swing.JFrame {
     final static int SCR_GET_HISTORIES_RESULT = (int) 61;
 
     final static int SCR_CHANGE_PIN = (int) 90;
-    
-    final static int SCR_ERR = (int) 100;
+
+    final static int SCR_NAVIGATION = (int) 100;
 
     // for connect the card
     CadClientInterface cad;
@@ -81,12 +85,15 @@ public class GasStation extends javax.swing.JFrame {
     // array for input data, output apdu command
     byte dataIn[];
     byte dataOut[];
-    
+
     // array for output data in textarea
     String outputString;
-    
+
     // string to announce err
-    String errString;
+    String noticeString;
+
+    // export bill file name
+    final static String billFile = "Bill.txt";
 
     // declare variable
     int maxAmount;
@@ -161,33 +168,33 @@ public class GasStation extends javax.swing.JFrame {
                 announce.setText("Man hinh ban dau");
                 setLabel(null, null, null, null, null);
                 break;
-            case SCR_ERR:
-                announce.setText(errString);
+            case SCR_NAVIGATION:
+                announce.setText(noticeString);
                 setLabel("BACK", null, null, null, null);
             default:
         }
     }
-    
+
     /**
      * convenient function
      */
     private byte[] createCharArr(String str) {
         byte result[] = new byte[str.length()];
         char charArr[] = str.toCharArray();
-        for(int i = 0; i < str.length(); i++) {
+        for (int i = 0; i < str.length(); i++) {
             result[i] = (byte) charArr[i];
         }
         return result;
     }
-    
+
     /**
      * convenient function
      */
     private String createDateTime(String time) {
         char timeArr[] = time.toCharArray();
-        return "20"+timeArr[0]+timeArr[1]+"/"+timeArr[2]+timeArr[3]+"/"+timeArr[4]+timeArr[5]+" "+timeArr[6]+timeArr[7]+":"+timeArr[8]+timeArr[9];
+        return "20" + timeArr[0] + timeArr[1] + "/" + timeArr[2] + timeArr[3] + "/" + timeArr[4] + timeArr[5] + " " + timeArr[6] + timeArr[7] + ":" + timeArr[8] + timeArr[9];
     }
-    
+
     /**
      * get string form bytes array
      */
@@ -198,7 +205,7 @@ public class GasStation extends javax.swing.JFrame {
         }
         return new String(result);
     }
-    
+
     /**
      * create output for get histories function
      */
@@ -525,8 +532,20 @@ public class GasStation extends javax.swing.JFrame {
             case SCR_GET_HISTORIES:
                 setScreen(SCR_GET_HISTORIES_BY_TIME);
                 break;
-            case SCR_ERR:
+            case SCR_NAVIGATION:
                 setScreen(backToScreen);
+                break;
+            case SCR_GET_HISTORIES_RESULT:
+                try {
+                    // write output text area to billFile
+                    BufferedWriter fileOut = new BufferedWriter(new FileWriter(billFile));
+                    announce.write(fileOut);
+                    noticeString = "Please receive your bill";
+                    backToScreen = SCR_MAIN;
+                    setScreen(SCR_NAVIGATION);
+                } catch (IOException ex) {
+                    Logger.getLogger(GasStation.class.getName()).log(Level.SEVERE, null, ex);
+                }
                 break;
         }
     }//GEN-LAST:event_btnSelection1ActionPerformed
@@ -570,9 +589,9 @@ public class GasStation extends javax.swing.JFrame {
             case SCR_GET_HISTORIES_BY_TIME:
                 // if input is valid
                 if (inputText.getText().length() != 6) {
-                    errString = "Invalid format!";
+                    noticeString = "Invalid format!";
                     backToScreen = SCR_GET_HISTORIES_BY_TIME;
-                    setScreen(SCR_ERR);
+                    setScreen(SCR_NAVIGATION);
                     break;
                 }
                 apdu.command[CLA] = SSGS_CLA;
@@ -592,17 +611,17 @@ public class GasStation extends javax.swing.JFrame {
                     setScreen(SCR_GET_HISTORIES_RESULT);
                 }
                 if (apdu.getStatus() == 0x6308) {
-                    errString = "No result!";
+                    noticeString = "No result!";
                     backToScreen = SCR_MAIN;
-                    setScreen(SCR_ERR);
+                    setScreen(SCR_NAVIGATION);
                 }
                 break;
             case SCR_GET_HISTORIES_BY_STATION:
                 // if input is valid
                 if (inputText.getText().length() != 5) {
-                    errString = "Invalid format!";
+                    noticeString = "Invalid format!";
                     backToScreen = SCR_GET_HISTORIES_BY_STATION;
-                    setScreen(SCR_ERR);
+                    setScreen(SCR_NAVIGATION);
                     break;
                 }
                 apdu.command[CLA] = SSGS_CLA;
@@ -622,9 +641,9 @@ public class GasStation extends javax.swing.JFrame {
                     setScreen(SCR_GET_HISTORIES_RESULT);
                 }
                 if (apdu.getStatus() == 0x6308) {
-                    errString = "No result!";
+                    noticeString = "No result!";
                     backToScreen = SCR_MAIN;
-                    setScreen(SCR_ERR);
+                    setScreen(SCR_NAVIGATION);
                 }
                 break;
         }
@@ -635,7 +654,7 @@ public class GasStation extends javax.swing.JFrame {
         switch (screen) {
             case SCR_MAIN:
                 // get balance fuction
-                
+
                 // send get balance apdu
                 Apdu apdu = new Apdu();
                 apdu.command[CLA] = SSGS_CLA;
@@ -693,9 +712,32 @@ public class GasStation extends javax.swing.JFrame {
 
     private void btnSelection4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSelection4ActionPerformed
         // TODO add your handling code here:
+        Apdu apdu = new Apdu();
         switch (screen) {
             case SCR_MAIN:
                 setScreen(SCR_CHANGE_PIN);
+                break;
+            case SCR_GET_HISTORIES:
+                apdu.command[CLA] = SSGS_CLA;
+                apdu.command[INS] = GET_LAST_PURCHASE_HISTORY;
+                apdu.setLc(0);
+                try {
+                    cad.exchangeApdu(apdu);
+                } catch (IOException ex) {
+                    Logger.getLogger(GasStation.class.getName()).log(Level.SEVERE, null, ex);
+                } catch (CadTransportException ex) {
+                    Logger.getLogger(GasStation.class.getName()).log(Level.SEVERE, null, ex);
+                }
+                System.out.println(apdu);
+                if (apdu.getStatus() == 0x9000) {
+                    outputString = getOutputHistories(apdu.dataOut);
+                    setScreen(SCR_GET_HISTORIES_RESULT);
+                }
+                if (apdu.getStatus() == 0x6308) {
+                    noticeString = "No result!";
+                    backToScreen = SCR_MAIN;
+                    setScreen(SCR_NAVIGATION);
+                }
                 break;
         }
     }//GEN-LAST:event_btnSelection4ActionPerformed
