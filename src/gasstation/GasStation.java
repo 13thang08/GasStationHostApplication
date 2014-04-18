@@ -7,15 +7,23 @@ package gasstation;
 
 import com.sun.javacard.apduio.*;
 import static com.sun.javacard.apduio.Apdu.*;
+import java.awt.Color;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.BufferedWriter;
+import java.io.ByteArrayOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.Calendar;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.swing.BorderFactory;
+import javax.swing.Timer;
 
 /**
  *
@@ -44,9 +52,10 @@ public class GasStation extends javax.swing.JFrame {
     final static short INVAILD_NUMBER_FORMAT = 0x6307;
     final static short SW_PURCHASE_INFO_NOT_FOUND = 0x6308;
     final static short SW_PIN_IS_BLOCKED = 0x6309;
+    private static final byte[] dummySignature = {(byte) 0x88, (byte) 0x88, (byte) 0x88, (byte) 0x88, (byte) 0x88, (byte) 0x88, (byte) 0x88, (byte) 0x88};
 
     // define constant
-    final static int GASOLINE_PRICE = (int) 23500;
+    final static int GASOLINE_PRICE = (int) 200;
     final static String STATION_ID = "AA123";
 
     // max data length
@@ -59,6 +68,7 @@ public class GasStation extends javax.swing.JFrame {
     final static int SCR_PIN_IS_BLOCKED = (int) 22;
     final static int SCR_MAIN = (int) 30;
     final static int SCR_REFUEL = (int) 40;
+    final static int SCR_REFUEL_CONFIRM = (int) 42;
     final static int SCR_REFUEL_COMPLETE = (int) 41;
 
     final static int SCR_GET_BALANCE = (int) 50;
@@ -138,7 +148,11 @@ public class GasStation extends javax.swing.JFrame {
                 setLabel("REFUEL", "GET BALANCE", "GET HISTORIES", "CHANGE PIN", "EXIT");
                 break;
             case SCR_REFUEL:
-                announce.setText("Refueling...");
+                announce.setText("Amount of Gasoline:");
+                setLabel(null, null, null, null, null);
+                break;
+            case SCR_REFUEL_CONFIRM:
+                announce.setText("Please enter OK button to confirm the purchase");
                 setLabel("OK", null, null, null, null);
                 break;
             case SCR_REFUEL_COMPLETE:
@@ -182,6 +196,71 @@ public class GasStation extends javax.swing.JFrame {
                 setLabel("BACK", null, null, null, null);
             default:
         }
+    }
+
+    /**
+     * convenient function
+     */
+    public String createStringFromTime(int number) {
+        if (number < 10) {
+            return "0" + number;
+        }
+        return Integer.toString(number);
+    }
+
+    /**
+     * convenient function
+     */
+    public byte[] createUpdateInfo() throws IOException {
+        // get current time
+        Calendar calendar = Calendar.getInstance();
+        int years = calendar.get(Calendar.YEAR);
+        int months = calendar.get(Calendar.MONTH);
+        int days = calendar.get(Calendar.DAY_OF_MONTH);
+        int hours = calendar.get(Calendar.HOUR_OF_DAY);
+        int minutes = calendar.get(Calendar.MINUTE);
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        // write update purchase info tlv header
+        baos.write(new byte[]{(byte) 0xe3, (byte) 0x29});
+        // write id tlv
+        baos.write(new byte[]{(byte) 0xc4, (byte) 0x05});
+        baos.write(createByteArr(STATION_ID));
+        // write byteTime tlv
+        baos.write(new byte[]{(byte) 0xc5, (byte) 0x0a});
+        baos.write(createByteArr(createStringFromTime(years - 2000)));
+        baos.write(createByteArr(createStringFromTime(months)));
+        baos.write(createByteArr(createStringFromTime(days)));
+        baos.write(createByteArr(createStringFromTime(hours)));
+        baos.write(createByteArr(createStringFromTime(minutes)));
+        // write amount tlv
+        baos.write(new byte[]{(byte) 0xc6, (byte) 0x04});
+        baos.write(ByteBuffer.allocate(4).putInt(amountOfGasoline).array());
+        // write price tlv
+        baos.write(new byte[]{(byte) 0xc7, (byte) 0x04});
+        baos.write(ByteBuffer.allocate(4).putInt(GASOLINE_PRICE).array());
+        // write sign tlv
+        baos.write(new byte[]{(byte) 0xc8, (byte) 0x08});
+        baos.write(dummySignature);
+
+        // return the result
+        return baos.toByteArray();
+
+    }
+
+    /**
+     * convenient function
+     */
+    public String currentTime() {
+        Calendar calendar = Calendar.getInstance();
+        int years = calendar.get(Calendar.YEAR);
+        int months = calendar.get(Calendar.MONTH);
+        int days = calendar.get(Calendar.DAY_OF_MONTH);
+        int hours = calendar.get(Calendar.HOUR_OF_DAY);
+        int minutes = calendar.get(Calendar.MINUTE);
+        int seconds = calendar.get(Calendar.SECOND);
+        String currentTime = years + "/" + months + "/" + days + " " + hours + ":" + minutes + ":" + seconds;
+        return currentTime;
     }
 
     /**
@@ -250,12 +329,16 @@ public class GasStation extends javax.swing.JFrame {
         dataIn = new byte[MAX_DATA_LENGTH];
 
         // test
+        price.setBorder(BorderFactory.createLineBorder(Color.white));
+        currentTime.setBorder(BorderFactory.createLineBorder(Color.white));
+        stationID.setBorder(BorderFactory.createLineBorder(Color.white));
+        amount.setBorder(BorderFactory.createLineBorder(Color.white));
+
         setScreen(SCR_VALIDATE);
         price.setText(Integer.toString(GASOLINE_PRICE));
-        price.setEditable(false);
         stationID.setText(STATION_ID);
-        stationID.setEditable(false);
         announce.setEditable(false);
+        amount.setText(Integer.toString(0));
         // insert code to connect the card, init maxAmount, screen (sau nay them code chon card, copy sang cho khac
 
         // code for connect the card
@@ -273,6 +356,32 @@ public class GasStation extends javax.swing.JFrame {
         apdu.setDataIn(dataIn, 6);
         cad.exchangeApdu(apdu);
         System.out.println(apdu);
+
+        // code for get maxAmount
+        apdu.command[CLA] = SSGS_CLA;
+        apdu.command[INS] = GET_BALANCE;
+        apdu.setLc(0);
+        try {
+            cad.exchangeApdu(apdu);
+        } catch (IOException ex) {
+            Logger.getLogger(GasStation.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (CadTransportException ex) {
+            Logger.getLogger(GasStation.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        System.out.println(apdu);
+        byte balanceArr[] = apdu.getDataOut();
+        balance = ByteBuffer.wrap(balanceArr, 0, 4).getInt();
+        maxAmount = (int) balance / GASOLINE_PRICE;
+
+        // code for display current time
+        ActionListener taskPerformer = new ActionListener() {
+            public void actionPerformed(ActionEvent evt) {
+                //System.out.println(currentTime());
+                currentTime.setText(currentTime());
+            }
+        };
+        Timer t = new Timer(1000, taskPerformer);
+        t.start();
     }
 
     /**
@@ -285,10 +394,10 @@ public class GasStation extends javax.swing.JFrame {
     private void initComponents() {
 
         jPanel1 = new javax.swing.JPanel();
-        stationID = new javax.swing.JTextField();
-        amount = new javax.swing.JTextField();
-        currentTime = new javax.swing.JTextField();
-        price = new javax.swing.JTextField();
+        stationID = new javax.swing.JLabel();
+        currentTime = new javax.swing.JLabel();
+        amount = new javax.swing.JLabel();
+        price = new javax.swing.JLabel();
         jPanel2 = new javax.swing.JPanel();
         jPanel3 = new javax.swing.JPanel();
         lblForBtn1 = new javax.swing.JLabel();
@@ -312,35 +421,29 @@ public class GasStation extends javax.swing.JFrame {
 
         jPanel1.setBackground(new java.awt.Color(204, 204, 255));
 
-        stationID.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                stationIDActionPerformed(evt);
-            }
-        });
-
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel1Layout.createSequentialGroup()
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addComponent(stationID)
+                    .addComponent(stationID, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(amount, javax.swing.GroupLayout.DEFAULT_SIZE, 118, Short.MAX_VALUE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addComponent(currentTime, javax.swing.GroupLayout.DEFAULT_SIZE, 108, Short.MAX_VALUE)
-                    .addComponent(price)))
+                    .addComponent(currentTime, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(price, javax.swing.GroupLayout.DEFAULT_SIZE, 108, Short.MAX_VALUE)))
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel1Layout.createSequentialGroup()
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(stationID, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(currentTime, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addComponent(stationID, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(currentTime, javax.swing.GroupLayout.DEFAULT_SIZE, 20, Short.MAX_VALUE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(amount, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(price, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addComponent(amount, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(price, javax.swing.GroupLayout.DEFAULT_SIZE, 25, Short.MAX_VALUE)))
         );
 
         jPanel2.setBackground(new java.awt.Color(204, 204, 255));
@@ -516,12 +619,9 @@ public class GasStation extends javax.swing.JFrame {
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
-    private void stationIDActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_stationIDActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_stationIDActionPerformed
-
     private void btnSelection1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSelection1ActionPerformed
         // TODO add your handling code here:
+        Apdu apdu = new Apdu();
         switch (screen) {
             case SCR_VALIDATE_FAILED:
                 setScreen(SCR_VALIDATE);
@@ -531,9 +631,6 @@ public class GasStation extends javax.swing.JFrame {
                 break;
             case SCR_MAIN:
                 setScreen(SCR_REFUEL);
-                break;
-            case SCR_REFUEL:
-                setScreen(SCR_REFUEL_COMPLETE);
                 break;
             case SCR_GET_BALANCE:
                 setScreen(SCR_MAIN);
@@ -556,6 +653,67 @@ public class GasStation extends javax.swing.JFrame {
                     Logger.getLogger(GasStation.class.getName()).log(Level.SEVERE, null, ex);
                 }
                 break;
+            case SCR_REFUEL_CONFIRM:
+                if (amountOfGasoline > maxAmount) {
+                    noticeString = "Account balance is not enough!";
+                    backToScreen = SCR_MAIN;
+                    setScreen(SCR_NAVIGATION);
+                    amountOfGasoline = 0;
+                    amount.setText(Integer.toString(amountOfGasoline));
+                    break;
+                }
+                maxAmount -= amountOfGasoline;
+                // insert code to send update purchase info here
+                apdu.command[CLA] = SSGS_CLA;
+                apdu.command[INS] = UPDATE_PURCHASE_INFO;
+                try {
+                    apdu.setDataIn(createUpdateInfo());
+                    cad.exchangeApdu(apdu);
+                } catch (IOException ex) {
+                    Logger.getLogger(GasStation.class.getName()).log(Level.SEVERE, null, ex);
+                } catch (CadTransportException ex) {
+                    Logger.getLogger(GasStation.class.getName()).log(Level.SEVERE, null, ex);
+                }
+                System.out.println(apdu);
+
+                // if failed
+                if (apdu.getStatus() != 0x9000) {
+                    noticeString = "Error";
+                    if (apdu.getStatus() == INVALID_STATION_SIGNATURE) {
+                        noticeString = "Invalid station signature!";
+                    }
+                    backToScreen = SCR_INITIAL;
+                    setScreen(SCR_NAVIGATION);
+                    amountOfGasoline = 0;
+                    amount.setText(Integer.toString(amountOfGasoline));
+                    break;
+                }
+                // if successful
+                if (apdu.getStatus() == 0x9000) {
+                    apdu.command[CLA] = SSGS_CLA;
+                    apdu.command[INS] = GET_LAST_PURCHASE_HISTORY;
+                    apdu.setLc(0);
+                    try {
+                        cad.exchangeApdu(apdu);
+                    } catch (IOException ex) {
+                        Logger.getLogger(GasStation.class.getName()).log(Level.SEVERE, null, ex);
+                    } catch (CadTransportException ex) {
+                        Logger.getLogger(GasStation.class.getName()).log(Level.SEVERE, null, ex);
+                    }
+                    System.out.println(apdu);
+                    if (apdu.getStatus() == 0x9000) {
+                        outputString = getOutputHistories(apdu.dataOut);
+                        setScreen(SCR_GET_HISTORIES_RESULT);
+                    }
+                    if (apdu.getStatus() == 0x6308) {
+                        noticeString = "No result!";
+                        backToScreen = SCR_MAIN;
+                        setScreen(SCR_NAVIGATION);
+                    }
+                }
+                amountOfGasoline = 0;
+                amount.setText(Integer.toString(amountOfGasoline));
+                break;
         }
     }//GEN-LAST:event_btnSelection1ActionPerformed
 
@@ -570,7 +728,7 @@ public class GasStation extends javax.swing.JFrame {
                 inputString = inputText.getText();
                 inputArr = inputString.toCharArray();
                 Lc = inputArr.length;
-                
+
                 // check if input is empty
                 if (Lc == 0) {
                     noticeString = "PIN cannot empty!";
@@ -578,7 +736,7 @@ public class GasStation extends javax.swing.JFrame {
                     setScreen(SCR_NAVIGATION);
                     break;
                 }
-                
+
                 for (int i = 0; i < Lc; i++) {
                     dataIn[i] = (byte) (inputArr[i] - '0');
                 }
@@ -712,6 +870,26 @@ public class GasStation extends javax.swing.JFrame {
                     }
                 }
 
+                break;
+            case SCR_REFUEL:
+                try {
+                    amountOfGasoline = Integer.parseInt(inputText.getText());
+                } catch (NumberFormatException e) {
+                    amountOfGasoline = 0;
+                    noticeString = "Invalid number";
+                    backToScreen = SCR_REFUEL;
+                    setScreen(SCR_NAVIGATION);
+                    break;
+                }
+                if (amountOfGasoline <= 0) {
+                    amountOfGasoline = 0;
+                    noticeString = "Invalid number";
+                    backToScreen = SCR_REFUEL;
+                    setScreen(SCR_NAVIGATION);
+                    break;
+                }
+                amount.setText(Integer.toString(amountOfGasoline));
+                setScreen(SCR_REFUEL_CONFIRM);
                 break;
         }
     }//GEN-LAST:event_btnSubmitActionPerformed
@@ -860,7 +1038,7 @@ public class GasStation extends javax.swing.JFrame {
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JTextField amount;
+    private javax.swing.JLabel amount;
     private javax.swing.JTextArea announce;
     private javax.swing.JButton btnSelection1;
     private javax.swing.JButton btnSelection2;
@@ -868,7 +1046,7 @@ public class GasStation extends javax.swing.JFrame {
     private javax.swing.JButton btnSelection4;
     private javax.swing.JButton btnSelection5;
     private javax.swing.JButton btnSubmit;
-    private javax.swing.JTextField currentTime;
+    private javax.swing.JLabel currentTime;
     private javax.swing.JTextField inputText;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
@@ -881,7 +1059,7 @@ public class GasStation extends javax.swing.JFrame {
     private javax.swing.JLabel lblForBtn3;
     private javax.swing.JLabel lblForBtn4;
     private javax.swing.JLabel lblForBtn5;
-    private javax.swing.JTextField price;
-    private javax.swing.JTextField stationID;
+    private javax.swing.JLabel price;
+    private javax.swing.JLabel stationID;
     // End of variables declaration//GEN-END:variables
 }
