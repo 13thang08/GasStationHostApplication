@@ -399,6 +399,16 @@ public class GasStation extends javax.swing.JFrame {
         amount = new javax.swing.JLabel();
         price = new javax.swing.JLabel();
         jPanel2 = new javax.swing.JPanel();
+        btnQuickSelection1 = new javax.swing.JButton();
+        btnQuickSelection2 = new javax.swing.JButton();
+        btnQuickSelection3 = new javax.swing.JButton();
+        btnQuickSelection4 = new javax.swing.JButton();
+        btnQuickSelection5 = new javax.swing.JButton();
+        jLabel1 = new javax.swing.JLabel();
+        jLabel2 = new javax.swing.JLabel();
+        jLabel3 = new javax.swing.JLabel();
+        jLabel4 = new javax.swing.JLabel();
+        jLabel5 = new javax.swing.JLabel();
         jPanel3 = new javax.swing.JPanel();
         lblForBtn1 = new javax.swing.JLabel();
         btnSelection1 = new javax.swing.JButton();
@@ -448,15 +458,111 @@ public class GasStation extends javax.swing.JFrame {
 
         jPanel2.setBackground(new java.awt.Color(204, 204, 255));
 
+        btnQuickSelection1.setText("1");
+        btnQuickSelection1.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnQuickSelection1ActionPerformed(evt);
+            }
+        });
+
+        btnQuickSelection2.setText("2");
+        btnQuickSelection2.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnQuickSelection2ActionPerformed(evt);
+            }
+        });
+
+        btnQuickSelection3.setText("3");
+        btnQuickSelection3.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnQuickSelection3ActionPerformed(evt);
+            }
+        });
+
+        btnQuickSelection4.setText("4");
+        btnQuickSelection4.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnQuickSelection4ActionPerformed(evt);
+            }
+        });
+
+        btnQuickSelection5.setText("5");
+        btnQuickSelection5.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnQuickSelection5ActionPerformed(evt);
+            }
+        });
+
+        jLabel1.setText("20.000");
+
+        jLabel2.setText("50.000");
+
+        jLabel3.setText("100.000");
+
+        jLabel4.setText("200.000");
+
+        jLabel5.setText("500.000");
+
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
         jPanel2.setLayout(jPanel2Layout);
         jPanel2Layout.setHorizontalGroup(
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 114, Short.MAX_VALUE)
+            .addGroup(jPanel2Layout.createSequentialGroup()
+                .addComponent(btnQuickSelection3)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jLabel3, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+            .addGroup(jPanel2Layout.createSequentialGroup()
+                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addGroup(jPanel2Layout.createSequentialGroup()
+                        .addComponent(btnQuickSelection4)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jLabel4, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addGroup(jPanel2Layout.createSequentialGroup()
+                        .addComponent(btnQuickSelection5)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jLabel5, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel2Layout.createSequentialGroup()
+                        .addComponent(btnQuickSelection2)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jLabel2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel2Layout.createSequentialGroup()
+                        .addComponent(btnQuickSelection1)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 104, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addGap(0, 0, Short.MAX_VALUE))
         );
         jPanel2Layout.setVerticalGroup(
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 0, Short.MAX_VALUE)
+            .addGroup(jPanel2Layout.createSequentialGroup()
+                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addComponent(btnQuickSelection1)
+                    .addGroup(jPanel2Layout.createSequentialGroup()
+                        .addGap(4, 4, 4)
+                        .addComponent(jLabel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addComponent(btnQuickSelection2)
+                    .addGroup(jPanel2Layout.createSequentialGroup()
+                        .addGap(4, 4, 4)
+                        .addComponent(jLabel2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addComponent(btnQuickSelection3)
+                    .addGroup(jPanel2Layout.createSequentialGroup()
+                        .addGap(4, 4, 4)
+                        .addComponent(jLabel3, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(jPanel2Layout.createSequentialGroup()
+                        .addComponent(btnQuickSelection4)
+                        .addGap(0, 0, Short.MAX_VALUE))
+                    .addGroup(jPanel2Layout.createSequentialGroup()
+                        .addGap(4, 4, 4)
+                        .addComponent(jLabel4, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(btnQuickSelection5)
+                    .addComponent(jLabel5, javax.swing.GroupLayout.PREFERRED_SIZE, 23, javax.swing.GroupLayout.PREFERRED_SIZE)))
         );
 
         jPanel3.setBackground(new java.awt.Color(204, 204, 255));
@@ -501,7 +607,7 @@ public class GasStation extends javax.swing.JFrame {
         jPanel3Layout.setHorizontalGroup(
             jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel3Layout.createSequentialGroup()
-                .addComponent(lblForBtn4, javax.swing.GroupLayout.DEFAULT_SIZE, 88, Short.MAX_VALUE)
+                .addComponent(lblForBtn4, javax.swing.GroupLayout.DEFAULT_SIZE, 107, Short.MAX_VALUE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(btnSelection4))
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel3Layout.createSequentialGroup()
@@ -577,7 +683,7 @@ public class GasStation extends javax.swing.JFrame {
             .addGroup(jPanel5Layout.createSequentialGroup()
                 .addComponent(inputText, javax.swing.GroupLayout.PREFERRED_SIZE, 112, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(btnSubmit, javax.swing.GroupLayout.DEFAULT_SIZE, 98, Short.MAX_VALUE)
+                .addComponent(btnSubmit, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addContainerGap())
         );
         jPanel5Layout.setVerticalGroup(
@@ -594,14 +700,16 @@ public class GasStation extends javax.swing.JFrame {
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addComponent(jPanel2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jPanel2, javax.swing.GroupLayout.PREFERRED_SIZE, 113, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(2, 2, 2)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(jPanel5, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jPanel5, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(jPanel4, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jPanel3, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addComponent(jPanel3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+            .addGroup(layout.createSequentialGroup()
+                .addGap(115, 115, 115)
+                .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -892,6 +1000,7 @@ public class GasStation extends javax.swing.JFrame {
                 setScreen(SCR_REFUEL_CONFIRM);
                 break;
         }
+        inputText.setText(null);
     }//GEN-LAST:event_btnSubmitActionPerformed
 
     private void btnSelection2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSelection2ActionPerformed
@@ -996,6 +1105,61 @@ public class GasStation extends javax.swing.JFrame {
         }
     }//GEN-LAST:event_btnSelection5ActionPerformed
 
+    private void btnQuickSelection5ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnQuickSelection5ActionPerformed
+        // TODO add your handling code here:
+        switch(screen) {
+            case SCR_REFUEL:
+                amountOfGasoline = 500000 / GASOLINE_PRICE;
+                amount.setText(Integer.toString(amountOfGasoline));
+                setScreen(SCR_REFUEL_CONFIRM);
+                break;
+        }
+    }//GEN-LAST:event_btnQuickSelection5ActionPerformed
+
+    private void btnQuickSelection1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnQuickSelection1ActionPerformed
+        // TODO add your handling code here:
+        switch(screen) {
+            case SCR_REFUEL:
+                amountOfGasoline = 20000 / GASOLINE_PRICE;
+                amount.setText(Integer.toString(amountOfGasoline));
+                setScreen(SCR_REFUEL_CONFIRM);
+                break;
+        }
+    }//GEN-LAST:event_btnQuickSelection1ActionPerformed
+
+    private void btnQuickSelection2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnQuickSelection2ActionPerformed
+        // TODO add your handling code here:
+        switch(screen) {
+            case SCR_REFUEL:
+                amountOfGasoline = 50000 / GASOLINE_PRICE;
+                amount.setText(Integer.toString(amountOfGasoline));
+                setScreen(SCR_REFUEL_CONFIRM);
+                break;
+        }
+    }//GEN-LAST:event_btnQuickSelection2ActionPerformed
+
+    private void btnQuickSelection3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnQuickSelection3ActionPerformed
+        // TODO add your handling code here:
+        switch(screen) {
+            case SCR_REFUEL:
+                amountOfGasoline = 100000 / GASOLINE_PRICE;
+                amount.setText(Integer.toString(amountOfGasoline));
+                setScreen(SCR_REFUEL_CONFIRM);
+                break;
+        }
+    }//GEN-LAST:event_btnQuickSelection3ActionPerformed
+
+    private void btnQuickSelection4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnQuickSelection4ActionPerformed
+        // TODO add your handling code here:
+        switch(screen) {
+            case SCR_REFUEL:
+                amountOfGasoline = 200000 / GASOLINE_PRICE;
+                amount.setText(Integer.toString(amountOfGasoline));
+                setScreen(SCR_REFUEL_CONFIRM);
+                break;
+        }
+    }//GEN-LAST:event_btnQuickSelection4ActionPerformed
+
     /**
      * @param args the command line arguments
      */
@@ -1040,6 +1204,11 @@ public class GasStation extends javax.swing.JFrame {
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JLabel amount;
     private javax.swing.JTextArea announce;
+    private javax.swing.JButton btnQuickSelection1;
+    private javax.swing.JButton btnQuickSelection2;
+    private javax.swing.JButton btnQuickSelection3;
+    private javax.swing.JButton btnQuickSelection4;
+    private javax.swing.JButton btnQuickSelection5;
     private javax.swing.JButton btnSelection1;
     private javax.swing.JButton btnSelection2;
     private javax.swing.JButton btnSelection3;
@@ -1048,6 +1217,11 @@ public class GasStation extends javax.swing.JFrame {
     private javax.swing.JButton btnSubmit;
     private javax.swing.JLabel currentTime;
     private javax.swing.JTextField inputText;
+    private javax.swing.JLabel jLabel1;
+    private javax.swing.JLabel jLabel2;
+    private javax.swing.JLabel jLabel3;
+    private javax.swing.JLabel jLabel4;
+    private javax.swing.JLabel jLabel5;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
     private javax.swing.JPanel jPanel3;
