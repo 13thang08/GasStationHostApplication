@@ -12,6 +12,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
@@ -23,6 +24,7 @@ import java.util.Calendar;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.BorderFactory;
+import javax.swing.JFileChooser;
 import javax.swing.Timer;
 
 /**
@@ -119,6 +121,10 @@ public class GasStation extends javax.swing.JFrame {
     String newPIN;
     String confirmPIN;
 
+    // variable for start cref
+    JFileChooser fc;
+    Process cref;
+
     // function set label for select button
     private void setLabel(String str1, String str2, String str3, String str4, String str5) {
         lblForBtn1.setText(str1);
@@ -133,7 +139,7 @@ public class GasStation extends javax.swing.JFrame {
         switch (screenID) {
             case SCR_VALIDATE:
                 announce.setText("Please enter your PIN:");
-                setLabel(null, null, null, null, null);
+                setLabel("Exit", null, null, null, null);
                 break;
             case SCR_VALIDATE_FAILED:
                 announce.setText("Invalid PIN!");
@@ -188,7 +194,20 @@ public class GasStation extends javax.swing.JFrame {
                 setLabel(null, null, null, null, null);
                 break;
             case SCR_INITIAL:
-                announce.setText("Man hinh ban dau");
+                // reset all value
+                // cref
+                try {
+                    Runtime.getRuntime().exec("taskkill /F /IM cref_tdual.exe");
+                } catch (IOException ex) {
+                    Logger.getLogger(GasStation.class.getName()).log(Level.SEVERE, null, ex);
+                }
+                // amount variable
+                maxAmount = 0;
+                amountOfGasoline = 0;
+                // enable select card button
+                selectCard.setEnabled(true);
+
+                announce.setText("Please insert the card");
                 setLabel(null, null, null, null, null);
                 break;
             case SCR_NAVIGATION:
@@ -324,6 +343,7 @@ public class GasStation extends javax.swing.JFrame {
      */
     public GasStation() throws IOException, CadTransportException {
         initComponents();
+        fc = new JFileChooser("C:\\Users\\Ariya\\Desktop");
 
         // initialize the dataIn, dataOut
         dataIn = new byte[MAX_DATA_LENGTH];
@@ -334,44 +354,11 @@ public class GasStation extends javax.swing.JFrame {
         stationID.setBorder(BorderFactory.createLineBorder(Color.white));
         amount.setBorder(BorderFactory.createLineBorder(Color.white));
 
-        setScreen(SCR_VALIDATE);
+        setScreen(SCR_INITIAL);
         price.setText(Integer.toString(GASOLINE_PRICE));
         stationID.setText(STATION_ID);
         announce.setEditable(false);
         amount.setText(Integer.toString(0));
-        // insert code to connect the card, init maxAmount, screen (sau nay them code chon card, copy sang cho khac
-
-        // code for connect the card
-        sock = new Socket("localhost", 9025);
-        is = sock.getInputStream();
-        os = sock.getOutputStream();
-        cad = CadDevice.getCadClientInstance(CadDevice.PROTOCOL_T1, is, os);
-        cad.powerUp();
-        Apdu apdu = new Apdu();
-        apdu.command[CLA] = (byte) 0x00;
-        apdu.command[INS] = (byte) 0xa4;
-        apdu.command[P1] = (byte) 0x04;
-        apdu.command[P2] = (byte) 0x00;
-        byte[] dataIn = {(byte) 0x92, (byte) 0x25, (byte) 0xb1, (byte) 0xd8, (byte) 0xaa, (byte) 0x74};
-        apdu.setDataIn(dataIn, 6);
-        cad.exchangeApdu(apdu);
-        System.out.println(apdu);
-
-        // code for get maxAmount
-        apdu.command[CLA] = SSGS_CLA;
-        apdu.command[INS] = GET_BALANCE;
-        apdu.setLc(0);
-        try {
-            cad.exchangeApdu(apdu);
-        } catch (IOException ex) {
-            Logger.getLogger(GasStation.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (CadTransportException ex) {
-            Logger.getLogger(GasStation.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        System.out.println(apdu);
-        byte balanceArr[] = apdu.getDataOut();
-        balance = ByteBuffer.wrap(balanceArr, 0, 4).getInt();
-        maxAmount = (int) balance / GASOLINE_PRICE;
 
         // code for display current time
         ActionListener taskPerformer = new ActionListener() {
@@ -426,6 +413,7 @@ public class GasStation extends javax.swing.JFrame {
         jPanel5 = new javax.swing.JPanel();
         inputText = new javax.swing.JTextField();
         btnSubmit = new javax.swing.JButton();
+        selectCard = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -695,6 +683,13 @@ public class GasStation extends javax.swing.JFrame {
                 .addGap(0, 3, Short.MAX_VALUE))
         );
 
+        selectCard.setText("Select Card");
+        selectCard.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                selectCardActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
@@ -706,13 +701,15 @@ public class GasStation extends javax.swing.JFrame {
                     .addComponent(jPanel5, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(jPanel4, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jPanel3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jPanel3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(selectCard)))
             .addGroup(layout.createSequentialGroup()
                 .addGap(115, 115, 115)
                 .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
         );
         layout.setVerticalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
             .addGroup(layout.createSequentialGroup()
                 .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -722,6 +719,7 @@ public class GasStation extends javax.swing.JFrame {
                     .addComponent(jPanel3, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jPanel5, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+            .addComponent(selectCard)
         );
 
         pack();
@@ -731,6 +729,9 @@ public class GasStation extends javax.swing.JFrame {
         // TODO add your handling code here:
         Apdu apdu = new Apdu();
         switch (screen) {
+            case SCR_VALIDATE:
+                setScreen(SCR_INITIAL);
+                break;
             case SCR_VALIDATE_FAILED:
                 setScreen(SCR_VALIDATE);
                 break;
@@ -1107,7 +1108,7 @@ public class GasStation extends javax.swing.JFrame {
 
     private void btnQuickSelection5ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnQuickSelection5ActionPerformed
         // TODO add your handling code here:
-        switch(screen) {
+        switch (screen) {
             case SCR_REFUEL:
                 amountOfGasoline = 500000 / GASOLINE_PRICE;
                 amount.setText(Integer.toString(amountOfGasoline));
@@ -1118,7 +1119,7 @@ public class GasStation extends javax.swing.JFrame {
 
     private void btnQuickSelection1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnQuickSelection1ActionPerformed
         // TODO add your handling code here:
-        switch(screen) {
+        switch (screen) {
             case SCR_REFUEL:
                 amountOfGasoline = 20000 / GASOLINE_PRICE;
                 amount.setText(Integer.toString(amountOfGasoline));
@@ -1129,7 +1130,7 @@ public class GasStation extends javax.swing.JFrame {
 
     private void btnQuickSelection2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnQuickSelection2ActionPerformed
         // TODO add your handling code here:
-        switch(screen) {
+        switch (screen) {
             case SCR_REFUEL:
                 amountOfGasoline = 50000 / GASOLINE_PRICE;
                 amount.setText(Integer.toString(amountOfGasoline));
@@ -1140,7 +1141,7 @@ public class GasStation extends javax.swing.JFrame {
 
     private void btnQuickSelection3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnQuickSelection3ActionPerformed
         // TODO add your handling code here:
-        switch(screen) {
+        switch (screen) {
             case SCR_REFUEL:
                 amountOfGasoline = 100000 / GASOLINE_PRICE;
                 amount.setText(Integer.toString(amountOfGasoline));
@@ -1151,7 +1152,7 @@ public class GasStation extends javax.swing.JFrame {
 
     private void btnQuickSelection4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnQuickSelection4ActionPerformed
         // TODO add your handling code here:
-        switch(screen) {
+        switch (screen) {
             case SCR_REFUEL:
                 amountOfGasoline = 200000 / GASOLINE_PRICE;
                 amount.setText(Integer.toString(amountOfGasoline));
@@ -1159,6 +1160,70 @@ public class GasStation extends javax.swing.JFrame {
                 break;
         }
     }//GEN-LAST:event_btnQuickSelection4ActionPerformed
+
+    private void selectCardActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_selectCardActionPerformed
+        // TODO add your handling code here:
+        try {
+            switch (screen) {
+                case SCR_INITIAL:
+                    // code for select the card
+                    int returnVal = fc.showOpenDialog(GasStation.this);
+                    if (returnVal == JFileChooser.APPROVE_OPTION) {
+                        // start cref
+                        File card = fc.getSelectedFile();
+                        String cmd = "D:\\JCDK3.0.4_ClassicEdition\\bin\\cref.bat -i \"" + card.getAbsolutePath() + "\" -o \"" + card.getAbsolutePath() + "\"";
+                        System.out.println(cmd);
+                        cref = Runtime.getRuntime().exec(cmd);
+                        // code for connect the card
+                        sock = new Socket("localhost", 9025);
+                        is = sock.getInputStream();
+                        os = sock.getOutputStream();
+                        cad = CadDevice.getCadClientInstance(CadDevice.PROTOCOL_T1, is, os);
+                        cad.powerUp();
+                        Apdu apdu = new Apdu();
+                        apdu.command[CLA] = (byte) 0x00;
+                        apdu.command[INS] = (byte) 0xa4;
+                        apdu.command[P1] = (byte) 0x04;
+                        apdu.command[P2] = (byte) 0x00;
+                        byte[] dataIn = {(byte) 0x92, (byte) 0x25, (byte) 0xb1, (byte) 0xd8, (byte) 0xaa, (byte) 0x74};
+                        apdu.setDataIn(dataIn, 6);
+                        cad.exchangeApdu(apdu);
+                        System.out.println(apdu);
+
+                        // if unsuccessful
+                        if (apdu.getStatus() != 0x9000) {
+                            noticeString = "Unable to connect the card";
+                            backToScreen = SCR_INITIAL;
+                            setScreen(SCR_NAVIGATION);
+                            return;
+                        }
+
+                        // if successful
+                        // code for get maxAmount
+                        apdu.command[CLA] = SSGS_CLA;
+                        apdu.command[INS] = GET_BALANCE;
+                        apdu.setLc(0);
+                        try {
+                            cad.exchangeApdu(apdu);
+                        } catch (IOException ex) {
+                            Logger.getLogger(GasStation.class.getName()).log(Level.SEVERE, null, ex);
+                        } catch (CadTransportException ex) {
+                            Logger.getLogger(GasStation.class.getName()).log(Level.SEVERE, null, ex);
+                        }
+                        System.out.println(apdu);
+                        byte balanceArr[] = apdu.getDataOut();
+                        balance = ByteBuffer.wrap(balanceArr, 0, 4).getInt();
+                        maxAmount = (int) balance / GASOLINE_PRICE;
+
+                        setScreen(SCR_VALIDATE);
+                        selectCard.setEnabled(false);
+                    }
+                    break;
+
+            }
+        } catch (Exception e) {
+        }
+    }//GEN-LAST:event_selectCardActionPerformed
 
     /**
      * @param args the command line arguments
@@ -1234,6 +1299,7 @@ public class GasStation extends javax.swing.JFrame {
     private javax.swing.JLabel lblForBtn4;
     private javax.swing.JLabel lblForBtn5;
     private javax.swing.JLabel price;
+    private javax.swing.JButton selectCard;
     private javax.swing.JLabel stationID;
     // End of variables declaration//GEN-END:variables
 }
