@@ -1171,7 +1171,7 @@ public class GasStation extends javax.swing.JFrame {
                     if (returnVal == JFileChooser.APPROVE_OPTION) {
                         // start cref
                         File card = fc.getSelectedFile();
-                        String cmd = "D:\\JCDK3.0.4_ClassicEdition\\bin\\cref.bat -i \"" + card.getAbsolutePath() + "\" -o \"" + card.getAbsolutePath() + "\"";
+                        String cmd = "E:\\Ariya\\JCDK3.0.4_ClassicEdition\\bin\\cref.bat -i \"" + card.getAbsolutePath() + "\" -o \"" + card.getAbsolutePath() + "\"";
                         System.out.println(cmd);
                         cref = Runtime.getRuntime().exec(cmd);
                         // code for connect the card
