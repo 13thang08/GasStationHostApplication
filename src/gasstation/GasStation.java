@@ -139,7 +139,7 @@ public class GasStation extends javax.swing.JFrame {
         switch (screenID) {
             case SCR_VALIDATE:
                 announce.setText("Please enter your PIN:");
-                setLabel("Exit", null, null, null, null);
+                setLabel("EXIT", null, null, null, null);
                 break;
             case SCR_VALIDATE_FAILED:
                 announce.setText("Invalid PIN!");
@@ -234,7 +234,7 @@ public class GasStation extends javax.swing.JFrame {
         // get current time
         Calendar calendar = Calendar.getInstance();
         int years = calendar.get(Calendar.YEAR);
-        int months = calendar.get(Calendar.MONTH);
+        int months = calendar.get(Calendar.MONTH) + 1; // because of day counter from 0
         int days = calendar.get(Calendar.DAY_OF_MONTH);
         int hours = calendar.get(Calendar.HOUR_OF_DAY);
         int minutes = calendar.get(Calendar.MINUTE);
@@ -273,7 +273,7 @@ public class GasStation extends javax.swing.JFrame {
     public String currentTime() {
         Calendar calendar = Calendar.getInstance();
         int years = calendar.get(Calendar.YEAR);
-        int months = calendar.get(Calendar.MONTH);
+        int months = calendar.get(Calendar.MONTH) + 1; //because of mouth counter from 0
         int days = calendar.get(Calendar.DAY_OF_MONTH);
         int hours = calendar.get(Calendar.HOUR_OF_DAY);
         int minutes = calendar.get(Calendar.MINUTE);
