@@ -17,8 +17,10 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.math.RoundingMode;
 import java.net.Socket;
 import java.nio.ByteBuffer;
+import java.text.DecimalFormat;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.logging.Level;
@@ -124,7 +126,10 @@ public class GasStation extends javax.swing.JFrame {
     // variable for start cref
     JFileChooser fc;
     Process cref;
-
+    
+    // number format for amount of gasoline
+    DecimalFormat df;
+    
     // function set label for select button
     private void setLabel(String str1, String str2, String str3, String str4, String str5) {
         lblForBtn1.setText(str1);
@@ -330,8 +335,8 @@ public class GasStation extends javax.swing.JFrame {
         while (offset < len) {
             history = "Station ID: " + getStringFromByteArray(bArray, offset + 4, 5) + "\r\n";
             history += "Time: " + createDateTime(getStringFromByteArray(bArray, offset + 11, 10)) + "\r\n";
-            history += "Amount: " + bb.getInt(offset + 23) + "\r\n";
-            history += "Price: " + bb.getInt(offset + 29) + "\r\n";
+            history += "Amount: " + df.format((double) bb.getInt(offset + 23) / 100) + "\r\n";
+            history += "Price: " + bb.getInt(offset + 29) * 100 + "\r\n";
             result += "\r\n" + history;
             offset += 33;
         }
@@ -344,6 +349,10 @@ public class GasStation extends javax.swing.JFrame {
     public GasStation() throws IOException, CadTransportException {
         initComponents();
         fc = new JFileChooser("C:\\Users\\Ariya\\Desktop");
+        
+        // initialize number format
+        df = new DecimalFormat("0.00");
+        df.setRoundingMode(RoundingMode.UP);
 
         // initialize the dataIn, dataOut
         dataIn = new byte[MAX_DATA_LENGTH];
@@ -355,10 +364,10 @@ public class GasStation extends javax.swing.JFrame {
         amount.setBorder(BorderFactory.createLineBorder(Color.white));
 
         setScreen(SCR_INITIAL);
-        price.setText(Integer.toString(GASOLINE_PRICE));
+        price.setText(Integer.toString(GASOLINE_PRICE * 100));
         stationID.setText(STATION_ID);
         announce.setEditable(false);
-        amount.setText(Integer.toString(0));
+        amount.setText(df.format(0));
 
         // code for display current time
         ActionListener taskPerformer = new ActionListener() {
@@ -768,7 +777,7 @@ public class GasStation extends javax.swing.JFrame {
                     backToScreen = SCR_MAIN;
                     setScreen(SCR_NAVIGATION);
                     amountOfGasoline = 0;
-                    amount.setText(Integer.toString(amountOfGasoline));
+                    amount.setText(df.format((double) amountOfGasoline / 100));
                     break;
                 }
                 maxAmount -= amountOfGasoline;
@@ -794,7 +803,7 @@ public class GasStation extends javax.swing.JFrame {
                     backToScreen = SCR_INITIAL;
                     setScreen(SCR_NAVIGATION);
                     amountOfGasoline = 0;
-                    amount.setText(Integer.toString(amountOfGasoline));
+                    amount.setText(df.format((double) amountOfGasoline / 100));
                     break;
                 }
                 // if successful
@@ -821,7 +830,7 @@ public class GasStation extends javax.swing.JFrame {
                     }
                 }
                 amountOfGasoline = 0;
-                amount.setText(Integer.toString(amountOfGasoline));
+                amount.setText(df.format((double) amountOfGasoline / 100));
                 break;
         }
     }//GEN-LAST:event_btnSelection1ActionPerformed
@@ -997,7 +1006,7 @@ public class GasStation extends javax.swing.JFrame {
                     setScreen(SCR_NAVIGATION);
                     break;
                 }
-                amount.setText(Integer.toString(amountOfGasoline));
+                amount.setText(df.format((double) amountOfGasoline / 100));
                 setScreen(SCR_REFUEL_CONFIRM);
                 break;
         }
@@ -1111,7 +1120,7 @@ public class GasStation extends javax.swing.JFrame {
         switch (screen) {
             case SCR_REFUEL:
                 amountOfGasoline = 500000 / GASOLINE_PRICE;
-                amount.setText(Integer.toString(amountOfGasoline));
+                amount.setText(df.format((double) amountOfGasoline / 100));
                 setScreen(SCR_REFUEL_CONFIRM);
                 break;
         }
@@ -1122,7 +1131,7 @@ public class GasStation extends javax.swing.JFrame {
         switch (screen) {
             case SCR_REFUEL:
                 amountOfGasoline = 20000 / GASOLINE_PRICE;
-                amount.setText(Integer.toString(amountOfGasoline));
+                amount.setText(df.format((double) amountOfGasoline / 100));
                 setScreen(SCR_REFUEL_CONFIRM);
                 break;
         }
@@ -1133,7 +1142,7 @@ public class GasStation extends javax.swing.JFrame {
         switch (screen) {
             case SCR_REFUEL:
                 amountOfGasoline = 50000 / GASOLINE_PRICE;
-                amount.setText(Integer.toString(amountOfGasoline));
+                amount.setText(df.format((double) amountOfGasoline / 100));
                 setScreen(SCR_REFUEL_CONFIRM);
                 break;
         }
@@ -1144,7 +1153,7 @@ public class GasStation extends javax.swing.JFrame {
         switch (screen) {
             case SCR_REFUEL:
                 amountOfGasoline = 100000 / GASOLINE_PRICE;
-                amount.setText(Integer.toString(amountOfGasoline));
+                amount.setText(df.format((double) amountOfGasoline / 100));
                 setScreen(SCR_REFUEL_CONFIRM);
                 break;
         }
@@ -1155,7 +1164,7 @@ public class GasStation extends javax.swing.JFrame {
         switch (screen) {
             case SCR_REFUEL:
                 amountOfGasoline = 200000 / GASOLINE_PRICE;
-                amount.setText(Integer.toString(amountOfGasoline));
+                amount.setText(df.format((double) amountOfGasoline / 100));
                 setScreen(SCR_REFUEL_CONFIRM);
                 break;
         }
