@@ -348,7 +348,7 @@ public class GasStation extends javax.swing.JFrame {
      */
     public GasStation() throws IOException, CadTransportException {
         initComponents();
-        fc = new JFileChooser("C:\\Users\\Ariya\\Desktop");
+        fc = new JFileChooser("C:\\Card");
         
         // initialize number format
         df = new DecimalFormat("0.00");
