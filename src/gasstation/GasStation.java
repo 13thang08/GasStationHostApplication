@@ -979,6 +979,19 @@ public class GasStation extends javax.swing.JFrame {
                         noticeString = "PIN change successful";
                         backToScreen = SCR_MAIN;
                         setScreen(SCR_NAVIGATION);
+
+                        //doi PIN thanh cong, validate mot lan nua
+                        apdu.command[CLA] = SSGS_CLA;
+                        apdu.command[INS] = VERIFY;
+                        apdu.setDataIn(dataIn, Lc);
+                        try {
+                            cad.exchangeApdu(apdu);
+                        } catch (IOException ex) {
+                            Logger.getLogger(GasStation.class.getName()).log(Level.SEVERE, null, ex);
+                        } catch (CadTransportException ex) {
+                            Logger.getLogger(GasStation.class.getName()).log(Level.SEVERE, null, ex);
+                        }
+                        System.out.println(apdu);
                     }
 
                     if (apdu.getStatus() == SW_PIN_VERIFICATION_REQUIRED) {
@@ -1072,7 +1085,7 @@ public class GasStation extends javax.swing.JFrame {
                     outputString = getOutputHistories(apdu.dataOut);
                     setScreen(SCR_GET_HISTORIES_RESULT);
                 }
-                
+
                 if (apdu.getStatus() == 0x6308) {
                     noticeString = "No result!";
                     backToScreen = SCR_MAIN;
