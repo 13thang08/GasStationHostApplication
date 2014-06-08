@@ -126,10 +126,10 @@ public class GasStation extends javax.swing.JFrame {
     // variable for start cref
     JFileChooser fc;
     Process cref;
-    
+
     // number format for amount of gasoline
     DecimalFormat df;
-    
+
     // function set label for select button
     private void setLabel(String str1, String str2, String str3, String str4, String str5) {
         lblForBtn1.setText(str1);
@@ -349,7 +349,7 @@ public class GasStation extends javax.swing.JFrame {
     public GasStation() throws IOException, CadTransportException {
         initComponents();
         fc = new JFileChooser("C:\\Card");
-        
+
         // initialize number format
         df = new DecimalFormat("0.00");
         df.setRoundingMode(RoundingMode.UP);
@@ -1067,9 +1067,17 @@ public class GasStation extends javax.swing.JFrame {
                     Logger.getLogger(GasStation.class.getName()).log(Level.SEVERE, null, ex);
                 }
                 System.out.println(apdu);
-                System.out.println(apdu.dataOut.length);
-                outputString = getOutputHistories(apdu.dataOut);
-                setScreen(SCR_GET_HISTORIES_RESULT);
+                //System.out.println(apdu.dataOut.length);
+                if (apdu.getStatus() == 0x9000) {
+                    outputString = getOutputHistories(apdu.dataOut);
+                    setScreen(SCR_GET_HISTORIES_RESULT);
+                }
+                
+                if (apdu.getStatus() == 0x6308) {
+                    noticeString = "No result!";
+                    backToScreen = SCR_MAIN;
+                    setScreen(SCR_NAVIGATION);
+                }
                 break;
         }
     }//GEN-LAST:event_btnSelection3ActionPerformed
